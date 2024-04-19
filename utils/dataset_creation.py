@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 def process_images(image_folder):
     with h5py.File('../image_data.h5', 'w') as hf:
-        for image_filename in tqdm(os.listdir(image_folder)):
+        file_paths = os.listdir(image_folder)[:1000]
+        for image_filename in tqdm(file_paths):
             try:
                 if image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
                     image_path = os.path.join(image_folder, image_filename)
