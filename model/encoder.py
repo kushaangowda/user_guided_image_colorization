@@ -15,7 +15,6 @@ class EncoderBlock(nn.Module):
         self.downsample = Downsample(out_channels)
         
     def forward(self, x):
-        print(f"Before: {x.shape}")
         x = self.resnet(x)
         resO = x
         b,c,h,w = x.shape
@@ -24,7 +23,6 @@ class EncoderBlock(nn.Module):
         tranO = x
         x = x.permute(0,2,1).reshape(b,c,h,w)
         x = self.downsample(x)
-        print(f"After: {x.shape}")
         return x, resO, tranO
 
 class Encoder(nn.Module):

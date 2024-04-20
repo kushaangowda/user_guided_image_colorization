@@ -13,7 +13,6 @@ class DecoderBlock(nn.Module):
         self.upsample = Upsample(in_channels)
     
     def forward(self, x, context):
-        print(f"Before: {x.shape}")
         x = self.upsample(x)
         b,c,h,w = x.shape
         x = x.reshape(b,c*self.p,h*w//self.p).permute(0,2,1)
@@ -22,7 +21,6 @@ class DecoderBlock(nn.Module):
         x = self.transformer(x,t_context)
         x = x.permute(0,2,1).reshape(b,c,h,w)
         x = self.resnet(x)
-        print(f"After: {x.shape}")
         return x
 
 class Decoder(nn.Module):
