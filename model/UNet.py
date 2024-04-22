@@ -16,7 +16,7 @@ class UNet(nn.Module):
         self.botNeck = TransformerEncoderBlock(out_channels[-1],n_heads,bn_blocks)
         self.decoder = Decoder(out_channels[::-1],in_channels[::-1],
                                 patch_dim//2**(blocks-1),n_heads,num_layers=blocks)
-        self.out = OutputLayer(4,2)
+        self.out = OutputLayer(4,20)
 
     def forward(self,x):
         x,skips = self.encoder(x)

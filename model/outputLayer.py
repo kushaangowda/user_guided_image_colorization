@@ -7,9 +7,9 @@ class OutputLayer(nn.Module):
     def __init__(self,in_channels,out_channels):
         super(OutputLayer,self).__init__()
         self.conv1 = nn.Conv2d(in_channels,out_channels,1)
-        # self.conv2 = nn.Conv2d(in_channels,out_channels,1)
+        self.conv2 = nn.Conv2d(in_channels,out_channels,1)
         # self.activation = nn.Tanh()
     
     def forward(self,x):
-        # return torch.cat((self.conv1(x), self.conv2(x)),dim=1)
-        return self.conv1(x)
+        return torch.stack((self.conv1(x), self.conv2(x)),dim=1)
+        # return self.conv1(x)
