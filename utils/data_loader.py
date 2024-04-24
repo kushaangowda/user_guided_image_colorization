@@ -69,6 +69,19 @@ def create_loaders(file_path, batch_size=32, test_size=0.2, random_seed=42, n_w=
     
     return train_loader, test_loader
 
+def create_test_loader(file_path, batch_size=32, test_size=0.2, random_seed=42, n_w=2):
+    with h5py.File(file_path, 'r') as file:
+        total_images = len(file)
+        indices = list(range(total_images))
+    
+    train_indices, test_indices = train_test_split(indices, test_size=test_size, random_state=random_seed)
+    
+    test_dataset = ImageDataset(file_path, test_indices)
+    
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    return test_loader
+
 if __name__ == '__main__':
     file_path = '../image_data.h5'
     train_loader, test_loader = create_loaders(file_path, batch_size=64)
