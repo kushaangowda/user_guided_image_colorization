@@ -60,7 +60,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
         print(f"Epoch {epoch + 1}:")
         data_iterator = iter(data_loader)
 
-        for i in tqdm(range(len(data_loader))):
+        for i in tqdm(range(len(data_loader)),desc='Training',disable=(rank != 0)):
             model.train()
             images,labels = next(data_iterator)
             # Move tensors to configured device
@@ -91,8 +91,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
             total_train_batch += 1
 
         test_iterator = iter(test_loader)
-
-        for i in  tqdm(range(len(test_loader))):
+        for i in  tqdm(range(len(test_loader)),desc='Testing'):
             model.eval()
             images,labels = next(test_iterator)
             # Move tensors to configured device
