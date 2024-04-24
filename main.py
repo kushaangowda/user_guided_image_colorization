@@ -19,7 +19,7 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
     (model,criterion,optim) = setup(
                                 lr,wd,in_channels,out_channels,
                                 n_layers=4,bn_layers=1,
-                                model_path="best_model_proc_0.pth"
+                                model_path=None
                             ) # setup the model and the hyperparameters
     model = model.to(device)
     train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank,rank)

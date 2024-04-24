@@ -1,6 +1,6 @@
 data
 image_data*.h5
-best_model_proc_*.pth
+best_model_*.pth
 
 # Compiled source #
 ###################
