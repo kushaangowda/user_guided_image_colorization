@@ -6,8 +6,8 @@ import os
 from tqdm import tqdm
 
 def process_images(image_folder):
-    with h5py.File('../image_data.h5', 'w') as hf:
-        file_paths = os.listdir(image_folder)[:1000]
+    with h5py.File('../image_data_20k.h5', 'w') as hf:
+        file_paths = os.listdir(image_folder)[:20000]
         for image_filename in tqdm(file_paths):
             try:
                 if image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):

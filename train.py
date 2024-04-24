@@ -5,6 +5,7 @@ from model.UNet import UNet
 from utils.data_loader import create_loaders
 from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
+import datetime
 
 def dataload(file_path,batch_size,n_w):
     train_loader, test_loader = create_loaders(file_path, batch_size=batch_size, test_size=0.2, 
@@ -20,6 +21,7 @@ def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,model_path=None)
                     
     if model_path is not None:
         try:
+            print("Loading model")
             model.load_state_dict(torch.load(model_path))
         except:
             print("Couldn't load model weights")
@@ -46,6 +48,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
     model = DDP(model,device_ids=[local_rank])
     total_step = len(data_loader)
     best_test_acc = 0
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     for epoch in range(epochs):
         avg_train_loss = 0
@@ -60,7 +63,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
         print(f"Epoch {epoch + 1}:")
         data_iterator = iter(data_loader)
 
-        for i in tqdm(range(len(data_loader))):
+        for i in tqdm(range(len(data_loader)),desc='Training',disable=(rank != 0)):
             model.train()
             images,labels = next(data_iterator)
             # Move tensors to configured device
@@ -91,8 +94,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
             total_train_batch += 1
 
         test_iterator = iter(test_loader)
-
-        for i in  tqdm(range(len(test_loader))):
+        for i in  tqdm(range(len(test_loader)),desc='Testing'):
             model.eval()
             images,labels = next(test_iterator)
             # Move tensors to configured device
@@ -125,7 +127,7 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
 
         if avg_test_acc > best_test_acc and rank == 0:
             best_test_acc = avg_test_acc
-            torch.save(model.module.state_dict(), f'best_model_proc_{rank}.pth')
+            torch.save(model.module.state_dict(), f'best_model_{timestamp}.pth')
             print(f'Best model saved with Test Acc: {avg_test_acc:.4f}')
 
 # if __name__ == '__main__':

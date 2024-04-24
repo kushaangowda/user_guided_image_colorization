@@ -16,7 +16,7 @@ class DecoderBlock(nn.Module):
         x = self.upsample(x)
         b,c,h,w = x.shape
         x = x.reshape(b,c*self.p,h*w//self.p).permute(0,2,1)
-        _,t_context = context
+        r_context,t_context = context
         # context = context.view(b,c*self.p,h*w//self.p).permute(0,2,1)
         x = self.transformer(x,t_context)
         x = x.permute(0,2,1).reshape(b,c,h,w)
