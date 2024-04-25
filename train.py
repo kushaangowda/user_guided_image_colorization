@@ -29,8 +29,8 @@ def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,mode
 
     optim = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
     data = np.load("class_weights.npy")
-    criterion1 = nn.CrossEntropyLoss(weight=torch.Tensor(data[0]).to("cuda"))
-    criterion2 = nn.CrossEntropyLoss(weight=torch.Tensor(data[1]).to("cuda"))
+    criterion1 = nn.CrossEntropyLoss(weight=torch.Tensor(data[0]).to("cuda"), ignore_index=-1)
+    criterion2 = nn.CrossEntropyLoss(weight=torch.Tensor(data[1]).to("cuda"), ignore_index=-1)
     return model,[criterion1,criterion2],optim
 
 def pixelwise_accuracy(output, target):
@@ -38,7 +38,7 @@ def pixelwise_accuracy(output, target):
     correct = (predicted == target).float()
     return correct.mean()
 
-def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins):
+def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins,l_mask=10):
     # x = torch.rand(4,4,256,256)
     # in_channels = [4,64,64]
     # out_channels = [64,64,128]
@@ -75,11 +75,18 @@ def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,
             labels = torch.clamp(labels, 0, num_bins-1)
             optim.zero_grad()
 
+            masks = images[:,-1].type(torch.bool)
+            images = images[:,:-1]
+
+            masked_labels_0 = labels[:,0].clone()
+            masked_labels_0[~masks] = -1 
+            masked_labels_1 = labels[:,1].clone()
+            masked_labels_1[~masks] = -1 
+
             # Forward pass
             outputs = model(images)
-            loss = criteria[0](outputs[:,0], labels[:,0])+criteria[1](outputs[:,1], labels[:,1])
-
-            # print(outputs.shape, labels.shape)
+            loss = criteria[0](outputs[:,0], labels[:,0]) + criteria[1](outputs[:,1], labels[:,1])
+            # loss += l_mask * (criteria[0](outputs[:,0], masked_labels_0) + criteria[1](outputs[:,1], masked_labels_1))
 
             # Backward and optimize
             loss.backward()
@@ -102,9 +109,19 @@ def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,
             images = images.to(device)
             labels = labels.to(device).long()
             labels = torch.clamp(labels, 0, num_bins-1)
+
+            masks = images[:,-1].type(torch.bool)
+            images = images[:,:-1]
+
+            masked_labels_0 = labels[:,0].clone()
+            masked_labels_0[~masks] = -1 
+            masked_labels_1 = labels[:,1].clone()
+            masked_labels_1[~masks] = -1 
+
             # Calculate accuracy
             outputs = model(images)
             loss = criteria[0](outputs[:,0], labels[:,0])+criteria[1](outputs[:,1], labels[:,1])
+            # loss += l_mask * (criteria[0](outputs[:,0], masked_labels_0) + criteria[1](outputs[:,1], masked_labels_1))
 
             avg_test_loss += loss.item()
 

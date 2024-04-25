@@ -22,7 +22,7 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
                                     lr,wd,in_channels,out_channels,
                                     n_layers=4,bn_layers=1,
                                     num_bins=num_bins,
-                                    model_path="best_model_20240425_021514.pth"
+                                    # model_path="best_model_20240425_021514.pth"
                                 ) # setup the model and the hyperparameters
         model = model.to(device)
         train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     epochs = args.epochs
     # in_channels = [4,32,64,128,256]
     # out_channels = [32,64,128,128,256]
-    in_channels = [4,8,16,32]
+    in_channels = [3,8,16,32]
     out_channels = [8,16,32,64]
 
     main(args.data_path,in_channels,out_channels,args.lr,args.wd,args.world_size,

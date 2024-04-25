@@ -48,7 +48,7 @@ class ImageDataset(Dataset):
         output_a = torch.unsqueeze( torch.tensor(data['A_channel'][:], dtype=torch.float32), 0)
         output_b = torch.unsqueeze(torch.tensor(data['B_channel'][:], dtype=torch.float32), 0)
         masks = generate_random_binary_mask(input_color.shape, 20)
-        return torch.cat((input_gray, masks*input_color),dim=0), torch.cat((output_a, output_b),dim=0)
+        return torch.cat((input_gray, masks*output_a, masks*output_b, masks),dim=0), torch.cat((output_a, output_b),dim=0)
 
     def close(self):
         self.file.close()
