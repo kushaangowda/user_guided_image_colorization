@@ -6,18 +6,19 @@ from utils.data_loader import create_loaders
 from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 import datetime
+import numpy as np
 
 def dataload(file_path,batch_size,n_w):
     train_loader, test_loader = create_loaders(file_path, batch_size=batch_size, test_size=0.2, 
                                                 random_seed=42, n_w=n_w)
     return train_loader, test_loader
 
-def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,model_path=None):
+def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,model_path=None):
     assert len(in_channels) == n_layers and len(out_channels) == n_layers, \
     'Error: channels should be same as number of layers'
 
     model = UNet(in_channels=in_channels,out_channels=out_channels,
-                    blocks=n_layers,bn_blocks=bn_layers)
+                    blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
                     
     if model_path is not None:
         try:
@@ -27,15 +28,17 @@ def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,model_path=None)
             print("Couldn't load model weights")
 
     optim = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
-    criterion = nn.CrossEntropyLoss()
-    return model,criterion,optim
+    data = np.load("class_weights.npy")
+    criterion1 = nn.CrossEntropyLoss(weight=torch.Tensor(data[0]).to("cuda"))
+    criterion2 = nn.CrossEntropyLoss(weight=torch.Tensor(data[1]).to("cuda"))
+    return model,[criterion1,criterion2],optim
 
 def pixelwise_accuracy(output, target):
     _, predicted = torch.max(output, 1)
     correct = (predicted == target).float()
     return correct.mean()
 
-def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank,rank):
+def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins):
     # x = torch.rand(4,4,256,256)
     # in_channels = [4,64,64]
     # out_channels = [64,64,128]
@@ -68,13 +71,13 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
             images,labels = next(data_iterator)
             # Move tensors to configured device
             images = images.to(device)
-            labels = labels.to(device).long().view(-1, 256, 256)
-            labels = torch.clamp(labels, 0, 19)
+            labels = labels.to(device).long()
+            labels = torch.clamp(labels, 0, num_bins-1)
             optim.zero_grad()
 
             # Forward pass
-            outputs = model(images).view(-1, 20, 256, 256)
-            loss = criterion(outputs, labels)
+            outputs = model(images)
+            loss = criteria[0](outputs[:,0], labels[:,0])+criteria[1](outputs[:,1], labels[:,1])
 
             # print(outputs.shape, labels.shape)
 
@@ -84,11 +87,9 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
 
             model.eval()
             # Calculate accuracy and loss
-            outputs = model(images).view(-1, 20, 256, 256)
-            loss = criterion(outputs, labels)
             avg_train_loss += loss.item()
 
-            train_acc = pixelwise_accuracy(outputs, labels)
+            train_acc = pixelwise_accuracy(outputs.reshape(-1, num_bins, 256, 256), labels.reshape(-1, 256, 256))
             avg_train_acc += train_acc.item()
 
             total_train_batch += 1
@@ -99,15 +100,15 @@ def train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank
             images,labels = next(test_iterator)
             # Move tensors to configured device
             images = images.to(device)
-            labels = labels.to(device).long().view(-1, 256, 256)
-            labels = torch.clamp(labels, 0, 19)
+            labels = labels.to(device).long()
+            labels = torch.clamp(labels, 0, num_bins-1)
             # Calculate accuracy
-            outputs = model(images).view(-1, 20, 256, 256)
-            loss = criterion(outputs, labels)
+            outputs = model(images)
+            loss = criteria[0](outputs[:,0], labels[:,0])+criteria[1](outputs[:,1], labels[:,1])
 
             avg_test_loss += loss.item()
 
-            test_acc = pixelwise_accuracy(outputs, labels)
+            test_acc = pixelwise_accuracy(outputs.reshape(-1, num_bins, 256, 256), labels.reshape(-1, 256, 256))
             avg_test_acc += test_acc.item()
 
             total_test_batch += 1

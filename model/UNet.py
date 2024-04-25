@@ -8,7 +8,7 @@ from .outputLayer import OutputLayer
 
 class UNet(nn.Module):
     ''' Unet for image colorization '''
-    def __init__(self,in_channels,out_channels,patch_dim=16,n_heads=4,blocks=1,bn_blocks=1):
+    def __init__(self,in_channels,out_channels,patch_dim=16,n_heads=4,blocks=1,bn_blocks=1,num_bins=40):
         super(UNet,self).__init__()
         assert len(in_channels) == blocks and len(out_channels) == blocks,\
         'Error: The len of in_channels and out_channels should be same as blocks'
@@ -18,7 +18,7 @@ class UNet(nn.Module):
         self.botNeck = TransformerEncoderBlock(out_channels[-1],n_heads,bn_blocks)
         self.decoder = Decoder(d_in_channels,d_out_channels,
                                 patch_dim//2**(blocks-1),n_heads,num_layers=blocks)
-        self.out = OutputLayer(4,20)
+        self.out = OutputLayer(4,num_bins)
 
     def forward(self,x):
         x,skips = self.encoder(x)

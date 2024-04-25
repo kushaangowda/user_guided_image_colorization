@@ -44,7 +44,7 @@ class ImageDataset(Dataset):
         data = self.file[group_key]
         
         input_color = torch.tensor(data['original'][:], dtype=torch.float32).permute(2,0,1) / 255.0  # Normalize
-        input_gray = torch.tensor(data['grayscale'][:], dtype=torch.float32).unsqueeze(0) / 255.0  # Normalize and add channel
+        input_gray = torch.tensor(data['grayscale'][:], dtype=torch.float32).unsqueeze(0) / 100.0  # Normalize and add channel
         output_a = torch.unsqueeze( torch.tensor(data['A_channel'][:], dtype=torch.float32), 0)
         output_b = torch.unsqueeze(torch.tensor(data['B_channel'][:], dtype=torch.float32), 0)
         masks = generate_random_binary_mask(input_color.shape, 20)
