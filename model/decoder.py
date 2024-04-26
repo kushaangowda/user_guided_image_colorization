@@ -8,13 +8,8 @@ class DecoderBlock(nn.Module):
                     ,dim_ff,num_layers):
         super(DecoderBlock,self).__init__()
         self.p = patch_dim*patch_dim
-<<<<<<< HEAD
-        self.resnet = BasicBlock(in_channels*2,out_channels,stride,padding,resnet_bias)
-        self.transformer = TransformerDecoderBlock(self.p*in_channels,n_heads,dim_ff,num_layers)
-=======
         self.resnet = BasicBlock(2*in_channels,out_channels,stride,padding,resnet_bias)
         # self.transformer = TransformerDecoderBlock(self.p*in_channels,n_heads,dim_ff,num_layers)
->>>>>>> profiling
         self.upsample = Upsample(in_channels)
     
     def forward(self, x, context):
@@ -23,15 +18,9 @@ class DecoderBlock(nn.Module):
         # x = x.reshape(b,c*self.p,h*w//self.p).permute(0,2,1)
         r_context,t_context = context
         # context = context.view(b,c*self.p,h*w//self.p).permute(0,2,1)
-<<<<<<< HEAD
-        x = self.transformer(x,t_context)
-        x = x.permute(0,2,1).reshape(b,c,h,w)
-        x = self.resnet(torch.cat((x,r_context), dim=1))
-=======
         # x = self.transformer(x,t_context)
         # x = x.permute(0,2,1).reshape(b,c,h,w)
         x = self.resnet(torch.cat((x,r_context),dim=1))
->>>>>>> profiling
         return x
 
 class Decoder(nn.Module):
