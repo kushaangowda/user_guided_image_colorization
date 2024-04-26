@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from model.ResUNet import ResUNet
+from model.TransUNet import TransUNet
 from model.UNet import UNet
 from utils.data_loader import create_test_loader
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -18,12 +20,21 @@ def dataload(file_path,batch_size,n_w):
                                                 random_seed=42, n_w=n_w)
     return test_loader
 
-def setup(in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,model_path=None):
+def setup(in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,model_path=None,model_type=1):
     assert len(in_channels) == n_layers and len(out_channels) == n_layers, \
     'Error: channels should be same as number of layers'
-
-    model = UNet(in_channels=in_channels,out_channels=out_channels,
-                    blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+    if model_type == 0:
+        print("Using simple UNet")
+        model = UNet(in_channels=in_channels,out_channels=out_channels,
+                        blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+    elif model_type == 1:
+        print("Using ResUNet")
+        model = ResUNet(in_channels=in_channels,out_channels=out_channels,
+                blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+    else:
+        print("Using TransUNet")
+        model = TransUNet(in_channels=in_channels,out_channels=out_channels,
+                blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
                     
     if model_path is not None:
         try:
@@ -99,7 +110,6 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
         labels = torch.clamp(labels, 0, num_bins-1)
 
         masks = images[:,-1].type(torch.bool)
-        images = images[:,:-1]
 
         masked_labels_0 = labels[:,0].clone()
         masked_labels_0[~masks] = -1 
@@ -132,7 +142,6 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
             labels = torch.clamp(labels, 0, num_bins-1)
 
             masks = images[:,-1].type(torch.bool)
-            images = images[:,:-1]
 
             masked_labels_0 = labels[:,0].clone()
             masked_labels_0[~masks] = -1 

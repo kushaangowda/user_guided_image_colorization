@@ -79,7 +79,7 @@ class ImageDataset(Dataset):
         input_gray = torch.tensor(data['grayscale'][:], dtype=torch.float32).unsqueeze(0) / 100.0  # Normalize and add channel
         output_a = torch.unsqueeze( torch.tensor(data['A_channel'][:], dtype=torch.float32), 0)
         output_b = torch.unsqueeze(torch.tensor(data['B_channel'][:], dtype=torch.float32), 0)
-        masks = generate_random_patch_mask(input_color.shape, 5, 9)
+        masks = generate_random_binary_mask(input_color.shape, 20)
         return torch.cat((input_gray, masks*output_a, masks*output_b, masks),dim=0), torch.cat((output_a, output_b),dim=0)
 
     def close(self):

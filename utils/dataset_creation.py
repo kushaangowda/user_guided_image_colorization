@@ -28,8 +28,7 @@ def process_images(image_folder, num_bins=64, total_images=1000):
                     if np.max(img_gray) > 100 or np.min(img_gray) < 0 or \
                        np.max(img_a) > 127 or np.min(img_a) < -128 or \
                        np.max(img_b) > 127 or np.min(img_b) < -128:
-                        print("hi")
-                        raise Exception("")
+                        raise Exception("Error: Image not in LAB color space")
 
                     a_bins = np.arange(-128, 128, int(256/num_bins))
                     b_bins = np.arange(-128, 128, int(256/num_bins))

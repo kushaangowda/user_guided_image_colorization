@@ -7,7 +7,7 @@ from torch.distributed import init_process_group, destroy_process_group
 from train import train, dataload, setup
 from predict import predict, setup as setup_predict, dataload as dataload_predict
 
-def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epochs,batch_size,mode,num_bins=40,n_workers=2):
+def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epochs,batch_size,mode,num_bins=40,n_workers=2,type=1,model_path=None):
 
     if not torch.cuda.is_available():
         print("Error: Distrbuted training is not supported without GPU")
@@ -31,7 +31,8 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
                                     lr,wd,in_channels,out_channels,
                                     n_layers=4,bn_layers=2,
                                     num_bins=num_bins,
-                                    model_path="best_model_20240425_235259.pth"
+                                    model_type=type,
+                                    model_path=model_path
                                 ) # setup the model and the hyperparameters
         model = model.to(device)
         train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins)
@@ -43,15 +44,18 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
     
     elif mode == 'predict':
         device = torch.device('cuda')
+        if model_path == None:
+            raise Exception("Model Path not given")
+    
         test_loader = dataload_predict(file_path,batch_size,n_workers) # load the data
         model = setup_predict(
                     in_channels,out_channels,
-                    n_layers=4,bn_layers=1,
+                    n_layers=4,bn_layers=2,
                     num_bins=num_bins,
-                    model_path="best_model_20240425_235259.pth"
+                    model_path=model_path
                 )
         model = model.to(device)
-        predict(test_loader,model,device,top_k=5,num_bins=num_bins)
+        predict(test_loader,model,device,top_k=30,num_bins=num_bins)
 
 
     else:
@@ -71,6 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--workers',default=1,type=int)
     parser.add_argument('--lr',default=1e-4,type=float)
     parser.add_argument('--wd',default=1e-3,type=float)
+    parser.add_argument('--type',default=1,type=int)
+    parser.add_argument('--path',default=None,type=str)
     parser.add_argument('--mode', default='train',type=str)
 
     args = parser.parse_args()
@@ -81,10 +87,10 @@ if __name__ == '__main__':
 
     batch_size = args.batch_size
     epochs = args.epochs
-    # in_channels = [4,32,64,128,256]
-    # out_channels = [32,64,128,128,256]
+
     in_channels = [3,8,16,32]
     out_channels = [8,16,32,64]
 
     main(args.data_path,in_channels,out_channels,args.lr,args.wd,args.world_size,
-            args.rank,args.local_rank,epochs,batch_size,args.mode,n_workers=args.workers,num_bins=32)
+            args.rank,args.local_rank,epochs,batch_size,args.mode,n_workers=args.workers,
+            num_bins=32,type=args.type,model_path=args.path)

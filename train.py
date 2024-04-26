@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from model.ResUNet import ResUNet
+from model.TransUNet import TransUNet
 from model.UNet import UNet
 from utils.data_loader import create_loaders
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -14,13 +16,22 @@ def dataload(file_path,batch_size,n_w):
                                                 random_seed=42, n_w=n_w)
     return train_loader, test_loader
 
-def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,model_path=None):
+def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,model_path=None,model_type=1):
     assert len(in_channels) == n_layers and len(out_channels) == n_layers, \
     'Error: channels should be same as number of layers'
-
-    model = UNet(in_channels=in_channels,out_channels=out_channels,
-                    blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
-                    
+    if model_type == 0:
+        print("Using simple UNet")
+        model = UNet(in_channels=in_channels,out_channels=out_channels,
+                        blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+    elif model_type == 1:
+        print("Using ResUNet")
+        model = ResUNet(in_channels=in_channels,out_channels=out_channels,
+                blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+    else:
+        print("Using TransUNet")
+        model = TransUNet(in_channels=in_channels,out_channels=out_channels,
+                blocks=n_layers,bn_blocks=bn_layers,num_bins=num_bins)
+        
     if model_path is not None:
         try:
             print("Loading model")
@@ -40,14 +51,6 @@ def pixelwise_accuracy(output, target):
     return correct.mean()
 
 def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins,l_mask=10):
-    # x = torch.rand(4,4,256,256)
-    # in_channels = [4,64,64]
-    # out_channels = [64,64,128]
-    # blocks = len(in_channels)
-    # model = UNet(in_channels,out_channels,blocks=blocks,bn_blocks=2)
-    # out = model(x)
-    # print(x.shape,out.shape)
-
     print(f"Proc {rank} using device {device}")
     model = DDP(model,device_ids=[local_rank])
     total_step = len(data_loader)
@@ -157,6 +160,3 @@ def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,
             best_test_acc = avg_test_acc
             torch.save(model.module.state_dict(), f'best_model_{timestamp}.pth')
             print(f'Best model saved with Test Acc: {avg_test_acc:.4f}')
-
-# if __name__ == '__main__':
-#     train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank,rank)
