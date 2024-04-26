@@ -2,6 +2,7 @@
 import torch
 import argparse
 import os
+import wandb
 from torch.distributed import init_process_group, destroy_process_group
 from train import train, dataload, setup
 from predict import predict, setup as setup_predict, dataload as dataload_predict
@@ -12,6 +13,14 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
         print("Error: Distrbuted training is not supported without GPU")
 
     if mode == 'train':
+        if rank == 0: # init wandb only if master process
+            wandb.init(project="Image colorization", config={
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "learning_rate": lr,
+                "weight_decay": wd,
+                "num_bins": num_bins,
+            }) 
         # init the process group for DDL
         init_process_group(backend='nccl',rank=rank,world_size=world_size)
         torch.cuda.set_device(local_rank)
@@ -20,12 +29,15 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
         data_loader, test_loader = dataload(file_path,batch_size,n_workers) # load the data
         (model,criteria,optim) = setup(
                                     lr,wd,in_channels,out_channels,
-                                    n_layers=4,bn_layers=1,
+                                    n_layers=4,bn_layers=2,
                                     num_bins=num_bins,
-                                    # model_path="best_model_20240425_021514.pth"
+                                    model_path="best_model_20240425_235259.pth"
                                 ) # setup the model and the hyperparameters
         model = model.to(device)
         train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,rank,num_bins)
+
+        if rank == 0:
+            wandb.finish()
 
         destroy_process_group()
     
@@ -36,10 +48,11 @@ def main(file_path,in_channels,out_channels,lr,wd,world_size,rank,local_rank,epo
                     in_channels,out_channels,
                     n_layers=4,bn_layers=1,
                     num_bins=num_bins,
-                    model_path="best_model_20240425_021514.pth"
+                    model_path="best_model_20240425_235259.pth"
                 )
         model = model.to(device)
         predict(test_loader,model,device,top_k=5,num_bins=num_bins)
+
 
     else:
         raise Exception("Invalid mode, use --mode=train or --mode=predict")

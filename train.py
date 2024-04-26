@@ -7,6 +7,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 import datetime
 import numpy as np
+import wandb
 
 def dataload(file_path,batch_size,n_w):
     train_loader, test_loader = create_loaders(file_path, batch_size=batch_size, test_size=0.2, 
@@ -134,14 +135,23 @@ def train(data_loader,test_loader,model,epochs,device,criteria,optim,local_rank,
         avg_train_loss = avg_train_loss/total_train_batch
         avg_test_acc = avg_test_acc/total_test_batch
         avg_test_loss = avg_test_loss/total_test_batch
+        if rank == 0:
+            print(
+                f'Proc: {rank} Epoch [{epoch+1}/{epochs}], \
+                Training Accuracy: {avg_train_acc:.4f}, \
+                Training Loss: {avg_train_loss:.4f}, \
+                Test Accuracy: {avg_test_acc:.4f}, \
+                Test Loss: {avg_test_loss:.4f}'
+            )
 
-        print(
-            f'Proc: {rank} Epoch [{epoch+1}/{epochs}], \
-            Training Accuracy: {avg_train_acc:.4f}, \
-            Training Loss: {avg_train_loss:.4f}, \
-            Test Accuracy: {avg_test_acc:.4f}, \
-            Test Loss: {avg_test_loss:.4f}'
-        )
+            wandb.log({
+                "Average Training Loss": avg_train_loss,
+                "Average Training Accuracy": avg_train_acc,
+                "Average Test Loss": avg_test_loss,
+                "Average Test Accuracy": avg_test_acc,
+                "epoch": epoch
+            })
+
 
         if avg_test_acc > best_test_acc and rank == 0:
             best_test_acc = avg_test_acc
