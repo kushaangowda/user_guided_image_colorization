@@ -10,18 +10,18 @@ class EncoderBlock(nn.Module):
         super(EncoderBlock,self).__init__()
         self.p = patch_dim*patch_dim
         self.resnet = BasicBlock(in_channels,out_channels,stride,padding,resnet_bias)
-        self.transformer = TransformerEncoderBlock(self.p*out_channels,
-                                                    n_heads,dim_ff,num_layers)
+        # self.transformer = TransformerEncoderBlock(self.p*out_channels,
+        #                                             n_heads,dim_ff,num_layers)
         self.downsample = Downsample(out_channels)
         
     def forward(self, x):
         x = self.resnet(x)
         resO = x
-        b,c,h,w = x.shape
-        x = x.view(b,c*self.p,h*w//self.p).permute(0,2,1)
-        x = self.transformer(x)
+        # b,c,h,w = x.shape
+        # x = x.view(b,c*self.p,h*w//self.p).permute(0,2,1)
+        # x = self.transformer(x)
         tranO = x
-        x = x.permute(0,2,1).reshape(b,c,h,w)
+        # x = x.permute(0,2,1).reshape(b,c,h,w)
         x = self.downsample(x)
         return x, resO, tranO
 

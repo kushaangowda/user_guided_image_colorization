@@ -3,6 +3,7 @@ image_data*.h5
 *.pth
 predictions*
 class_weights.npy
+wandb
 
 # Compiled source #
 ###################

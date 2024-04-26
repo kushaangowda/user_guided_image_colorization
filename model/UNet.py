@@ -15,17 +15,25 @@ class UNet(nn.Module):
         d_in_channels = [elem for elem in out_channels[::-1]]
         d_out_channels = in_channels[::-1]
         self.encoder = Encoder(in_channels,out_channels,patch_dim,n_heads,num_layers=blocks)
-        self.botNeck = TransformerEncoderBlock(out_channels[-1],n_heads,bn_blocks)
+        # self.botNeck = TransformerEncoderBlock(out_channels[-1],n_heads,bn_blocks)
+        self.botNeck = nn.Sequential(
+            nn.Conv2d(out_channels[-1],512,1,1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512,d_in_channels[0],1,1),
+            nn.BatchNorm2d(d_in_channels[0]),
+            nn.ReLU(inplace=True)
+        )
         self.decoder = Decoder(d_in_channels,d_out_channels,
                                 patch_dim//2**(blocks-1),n_heads,num_layers=blocks)
         self.out = OutputLayer(in_channels[0],num_bins)
 
     def forward(self,x):
         x,skips = self.encoder(x)
-        b,c,h,w = x.shape
-        x = x.view(b,c,h*w).permute(0,2,1)
+        # b,c,h,w = x.shape
+        # x = x.view(b,c,h*w).permute(0,2,1)
         x = self.botNeck(x)
-        x = x.permute(0,2,1).reshape(b,c,h,w)
+        # x = x.permute(0,2,1).reshape(b,c,h,w)
         x = self.decoder(x,skips)
         x = self.out(x)
         return x

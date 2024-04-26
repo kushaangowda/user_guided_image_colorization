@@ -94,6 +94,7 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
         images,labels = next(test_iterator)
         # Move tensors to configured device
         images = images.to(device)
+        images = images[:,:-1]
         labels = labels.to(device).long()
         labels = torch.clamp(labels, 0, num_bins-1)
         # Calculate accuracy
@@ -117,6 +118,7 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
             model.eval()
             # Move tensors to configured device
             images = images.to(device)
+            images = images[:,:-1]
             labels = labels.to(device).long()
             labels = torch.clamp(labels, 0, num_bins-1)
             # Calculate accuracy
