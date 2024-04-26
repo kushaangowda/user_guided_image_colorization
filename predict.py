@@ -96,6 +96,15 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
         images = images.to(device)
         labels = labels.to(device).long()
         labels = torch.clamp(labels, 0, num_bins-1)
+
+        masks = images[:,-1].type(torch.bool)
+        images = images[:,:-1]
+
+        masked_labels_0 = labels[:,0].clone()
+        masked_labels_0[~masks] = -1 
+        masked_labels_1 = labels[:,1].clone()
+        masked_labels_1[~masks] = -1 
+
         # Calculate accuracy
         outputs = model(images)
 
@@ -119,6 +128,15 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
             images = images.to(device)
             labels = labels.to(device).long()
             labels = torch.clamp(labels, 0, num_bins-1)
+
+            masks = images[:,-1].type(torch.bool)
+            images = images[:,:-1]
+
+            masked_labels_0 = labels[:,0].clone()
+            masked_labels_0[~masks] = -1 
+            masked_labels_1 = labels[:,1].clone()
+            masked_labels_1[~masks] = -1 
+            
             # Calculate accuracy
             outputs = model(images)
 

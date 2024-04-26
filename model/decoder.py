@@ -8,7 +8,7 @@ class DecoderBlock(nn.Module):
                     ,dim_ff,num_layers):
         super(DecoderBlock,self).__init__()
         self.p = patch_dim*patch_dim
-        self.resnet = BasicBlock(in_channels,out_channels,stride,padding,resnet_bias)
+        self.resnet = BasicBlock(in_channels*2,out_channels,stride,padding,resnet_bias)
         self.transformer = TransformerDecoderBlock(self.p*in_channels,n_heads,dim_ff,num_layers)
         self.upsample = Upsample(in_channels)
     
@@ -20,7 +20,7 @@ class DecoderBlock(nn.Module):
         # context = context.view(b,c*self.p,h*w//self.p).permute(0,2,1)
         x = self.transformer(x,t_context)
         x = x.permute(0,2,1).reshape(b,c,h,w)
-        x = self.resnet(x)
+        x = self.resnet(torch.cat((x,r_context), dim=1))
         return x
 
 class Decoder(nn.Module):

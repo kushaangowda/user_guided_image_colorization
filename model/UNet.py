@@ -12,7 +12,7 @@ class UNet(nn.Module):
         super(UNet,self).__init__()
         assert len(in_channels) == blocks and len(out_channels) == blocks,\
         'Error: The len of in_channels and out_channels should be same as blocks'
-        d_in_channels = [elem for elem in out_channels[::-1]]
+        d_in_channels = out_channels[::-1]
         d_out_channels = in_channels[::-1]
         self.encoder = Encoder(in_channels,out_channels,patch_dim,n_heads,num_layers=blocks)
         self.botNeck = TransformerEncoderBlock(out_channels[-1],n_heads,bn_blocks)

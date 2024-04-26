@@ -5,6 +5,38 @@ from torch.utils.data import Dataset, DataLoader
 import torch
 from torch.utils.data.distributed import DistributedSampler
 
+import torch
+
+def generate_random_patch_mask(image_shape, k, patch_size):
+    # Unpack the image dimensions
+    dim, height, width = image_shape
+
+    # Calculate the total number of pixels
+    total_pixels = height * width
+
+    pixels_per_patch = patch_size * patch_size
+
+    # Calculate the number of patches needed to cover approximately k% of the image
+    num_patches = int((total_pixels * (k / 100)) / pixels_per_patch)
+
+    # Randomly select the top-left corners of the patches
+    valid_x = height - patch_size + 1  # valid x-coordinates for the top-left corner of the patches
+    valid_y = width - patch_size + 1   # valid y-coordinates for the top-left corner of the patches
+
+    # Randomly select indices within the valid range
+    x_indices = torch.randint(0, valid_x, (num_patches,))
+    y_indices = torch.randint(0, valid_y, (num_patches,))
+
+    # Create an empty mask of zeros
+    mask = torch.zeros((height, width), dtype=torch.uint8)
+
+    # Set the selected 3x3 areas in the mask to 1
+    for x, y in zip(x_indices, y_indices):
+        mask[x:x+patch_size, y:y+patch_size] = 1
+
+    return torch.unsqueeze(mask, 0)
+
+
 def generate_random_binary_mask(image_shape, k):
     # Unpack the image dimensions
     dim, height, width = image_shape
@@ -47,7 +79,7 @@ class ImageDataset(Dataset):
         input_gray = torch.tensor(data['grayscale'][:], dtype=torch.float32).unsqueeze(0) / 100.0  # Normalize and add channel
         output_a = torch.unsqueeze( torch.tensor(data['A_channel'][:], dtype=torch.float32), 0)
         output_b = torch.unsqueeze(torch.tensor(data['B_channel'][:], dtype=torch.float32), 0)
-        masks = generate_random_binary_mask(input_color.shape, 20)
+        masks = generate_random_patch_mask(input_color.shape, 5, 9)
         return torch.cat((input_gray, masks*output_a, masks*output_b, masks),dim=0), torch.cat((output_a, output_b),dim=0)
 
     def close(self):

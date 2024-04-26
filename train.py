@@ -29,8 +29,8 @@ def setup(lr,wd,in_channels,out_channels,n_layers=5,bn_layers=2,num_bins=40,mode
 
     optim = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
     data = np.load("class_weights.npy")
-    criterion1 = nn.CrossEntropyLoss(weight=torch.Tensor(data[0]).to("cuda"), ignore_index=-1)
-    criterion2 = nn.CrossEntropyLoss(weight=torch.Tensor(data[1]).to("cuda"), ignore_index=-1)
+    criterion1 = nn.CrossEntropyLoss(weight=torch.Tensor(data[0]).to("cuda"))
+    criterion2 = nn.CrossEntropyLoss(weight=torch.Tensor(data[1]).to("cuda"))
     return model,[criterion1,criterion2],optim
 
 def pixelwise_accuracy(output, target):
