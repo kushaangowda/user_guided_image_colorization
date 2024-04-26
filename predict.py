@@ -158,6 +158,3 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
     print(
         f'Test Accuracy: {avg_test_acc:.4f}'
     )
-
-# if __name__ == '__main__':
-#     train(data_loader,test_loader,model,epochs,device,criterion,optim,local_rank,rank)
