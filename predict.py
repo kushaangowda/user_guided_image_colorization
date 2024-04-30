@@ -87,22 +87,16 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
     os.mkdir("predictions")
 
     print(f"Using device {device}")
-    
-    avg_test_loss = 0
-    avg_test_acc = 0
-    total_test_batch = 0
-
-    test_iterator = iter(test_loader)
 
     if num_batches is None:
         num_batches = len(test_loader)
 
-    acc_vals = []
-    idx = -1
+    test_iterator = iter(test_loader)
 
-    for i in  tqdm(range(num_batches)):
-        model.eval()
+    for i in  range(num_batches):
         images,labels = next(test_iterator)
+            
+        model.eval()
         # Move tensors to configured device
         images = images.to(device)
         images = images[:,:-1]
@@ -115,46 +109,8 @@ def predict(test_loader,model,device,top_k=5,num_batches=None,num_bins=40):
         masked_labels_0[~masks] = -1 
         masked_labels_1 = labels[:,1].clone()
         masked_labels_1[~masks] = -1 
-
+        
         # Calculate accuracy
         outputs = model(images)
 
-        test_acc = pixelwise_accuracy(outputs.view(-1, num_bins, 256, 256), labels.view(-1, 256, 256)).item()
-        
-        acc_vals.append(test_acc)
-
-        total_test_batch += 1
-
-
-    test_iterator = iter(test_loader)
-
-    top_indices = np.argsort(np.array(acc_vals))[-top_k:]
-
-    for i in  range(num_batches):
-        images,labels = next(test_iterator)
-
-        if i in top_indices:
-            model.eval()
-            # Move tensors to configured device
-            images = images.to(device)
-            images = images[:,:-1]
-            labels = labels.to(device).long()
-            labels = torch.clamp(labels, 0, num_bins-1)
-
-            masks = images[:,-1].type(torch.bool)
-
-            masked_labels_0 = labels[:,0].clone()
-            masked_labels_0[~masks] = -1 
-            masked_labels_1 = labels[:,1].clone()
-            masked_labels_1[~masks] = -1 
-            
-            # Calculate accuracy
-            outputs = model(images)
-
-            save_img(images, labels, outputs, i, num_bins)
-
-    avg_test_acc = avg_test_acc/total_test_batch
-
-    print(
-        f'Test Accuracy: {avg_test_acc:.4f}'
-    )
+        save_img(images, labels, outputs, i, num_bins)

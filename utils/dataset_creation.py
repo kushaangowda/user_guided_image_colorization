@@ -9,7 +9,7 @@ def process_images(image_folder, num_bins=64, total_images=1000):
     freq_a = {}
     freq_b = {}
     count = 0
-    with h5py.File('../image_data_1k.h5', 'w') as hf:
+    with h5py.File('../image_data.h5', 'w') as hf:
         file_paths = os.listdir(image_folder)
         for image_filename in tqdm(file_paths):
             if count == total_images:
