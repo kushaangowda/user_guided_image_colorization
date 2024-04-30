@@ -2,6 +2,8 @@
 
 This project introduces an approach to user-guided grayscale image colorization utilizing a UNet architecture combined with a custom class rebalancing and classification cross-entropy loss framework.
 
+<img src="figures/prob_stmt.png"/>
+
 ## Setup
 
 1. Clone this repository:
